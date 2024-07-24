@@ -49,7 +49,7 @@ class BMSTabosBatteryNode: public rclcpp::Node
                 RCLCPP_ERROR(this->get_logger(), "SocketCAN Bind Error.");
                 assert(true);
             }
-            RCLCPP_INFO(this->get_logger(), "SocketCAN Initialized.");
+            RCLCPP_INFO(this->get_logger(), "SocketCAN Initialized...");
 
             // ROS Related
 
@@ -57,12 +57,14 @@ class BMSTabosBatteryNode: public rclcpp::Node
             for(uint8_t i = 0; i < batt_cnt_; i++)
             {
                 char topic_name[100];
-                snprintf(topic_name, 100, "batt%d/battery_state", (int)i);
+                snprintf(topic_name, 100, "%sbatt%d/battery_state", prefix_.c_str(), (int)i);
                 pub_batt_states_.push_back(this->create_publisher<sensor_msgs::msg::BatteryState>(topic_name, rclcpp::SystemDefaultsQoS()));
             }
 
             auto period = std::chrono::duration<double>(1.0 / this->get_parameter("rate").as_double());
             timer_ = this->create_wall_timer(period, std::bind(&BMSTabosBatteryNode::timer_callback, this));
+
+            RCLCPP_INFO(this->get_logger(), "Initialized...");
         }
         ~BMSTabosBatteryNode() {}
 
@@ -149,6 +151,8 @@ class BMSTabosBatteryNode: public rclcpp::Node
                         uint8_t soh = (uint8_t)recv_frame.data[7];
                         auto ttf = (uint16_t)((recv_frame.data[3] << 8) + recv_frame.data[2]);
                         auto tte = (uint16_t)((recv_frame.data[5] << 8) + recv_frame.data[4]);
+
+                        RCLCPP_DEBUG(this->get_logger(), "ID[%d] == SOH %d   TTF: %d   TTE: %d", id, soh, ttf, tte);
                     }
                     else if(recv_frame.data[0] == (0x60 + id) && recv_frame.data[1] == 3)
                     {
